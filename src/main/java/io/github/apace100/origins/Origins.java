@@ -28,11 +28,15 @@ import me.shedaniel.autoconfig.serializer.ConfigSerializer;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.resource.ResourceType;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.JsonHelper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import java.util.HashMap;
+import java.util.UUID;
 
 public class Origins implements ModInitializer, OrderedResourceListenerInitializer {
 
@@ -43,6 +47,8 @@ public class Origins implements ModInitializer, OrderedResourceListenerInitializ
 
 	public static ServerConfig config;
 	private static ConfigSerializer<ServerConfig> configSerializer;
+
+	public static final HashMap<UUID, Boolean> PLAYERS_CHOOSING_ORIGIN = new HashMap<>();
 
 	@Override
 	public void onInitialize() {

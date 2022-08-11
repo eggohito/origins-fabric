@@ -17,4 +17,6 @@ public class ModPackets {
     public static final Identifier CONFIRM_ORIGIN = Origins.identifier("confirm_origin");
     public static final Identifier PLAYER_LANDED = Origins.identifier("player_landed");
     public static final Identifier BADGE_LIST = Origins.identifier("badge_list");
+    public static final Identifier CHOOSING_ORIGIN = Origins.identifier("choosing_origin");
+
 }

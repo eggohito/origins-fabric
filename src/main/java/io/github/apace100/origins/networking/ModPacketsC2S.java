@@ -18,6 +18,7 @@ import net.minecraft.util.Identifier;
 
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 
 public class ModPacketsC2S {
 
@@ -28,6 +29,18 @@ public class ModPacketsC2S {
         }
         ServerPlayNetworking.registerGlobalReceiver(ModPackets.CHOOSE_ORIGIN, ModPacketsC2S::chooseOrigin);
         ServerPlayNetworking.registerGlobalReceiver(ModPackets.CHOOSE_RANDOM_ORIGIN, ModPacketsC2S::chooseRandomOrigin);
+        ServerPlayNetworking.registerGlobalReceiver(ModPackets.CHOOSING_ORIGIN, ModPacketsC2S::choosingOrigin);
+    }
+
+    private static void choosingOrigin(MinecraftServer minecraftServer, ServerPlayerEntity serverPlayerEntity, ServerPlayNetworkHandler serverPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {
+
+        UUID playerUUID = packetByteBuf.readUuid();
+        boolean isChoosingOrigin = packetByteBuf.readBoolean();
+
+        minecraftServer.execute(
+            () -> Origins.PLAYERS_CHOOSING_ORIGIN.put(playerUUID, isChoosingOrigin)
+        );
+
     }
 
     private static void chooseOrigin(MinecraftServer minecraftServer, ServerPlayerEntity playerEntity, ServerPlayNetworkHandler serverPlayNetworkHandler, PacketByteBuf packetByteBuf, PacketSender packetSender) {

@@ -2,24 +2,31 @@ package io.github.apace100.origins;
 
 import io.github.apace100.apoli.ApoliClient;
 import io.github.apace100.apoli.integration.PowerClearCallback;
+import io.github.apace100.origins.networking.ModPackets;
 import io.github.apace100.origins.networking.ModPacketsS2C;
 import io.github.apace100.origins.registry.ModBlocks;
 import io.github.apace100.origins.registry.ModEntities;
+import io.github.apace100.origins.screen.ChooseOriginScreen;
 import io.github.apace100.origins.screen.ViewOriginScreen;
 import io.github.apace100.origins.util.PowerKeyManager;
+import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.fabricmc.fabric.api.blockrenderlayer.v1.BlockRenderLayerMap;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.entity.FlyingItemEntityRenderer;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.network.PacketByteBuf;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.UUID;
 
 public class OriginsClient implements ClientModInitializer {
 
@@ -28,6 +35,8 @@ public class OriginsClient implements ClientModInitializer {
     public static KeyBinding viewCurrentOriginKeybind;
 
     public static boolean isServerRunningOrigins = false;
+
+    private int syncDelayTicks = 0;
 
     @Override
     @Environment(EnvType.CLIENT)
@@ -55,11 +64,35 @@ public class OriginsClient implements ClientModInitializer {
         KeyBindingHelper.registerKeyBinding(viewCurrentOriginKeybind);
 
         ClientTickEvents.START_CLIENT_TICK.register(tick -> {
+
             while(viewCurrentOriginKeybind.wasPressed()) {
                 if(!(MinecraftClient.getInstance().currentScreen instanceof ViewOriginScreen)) {
                     MinecraftClient.getInstance().setScreen(new ViewOriginScreen());
                 }
             }
+
+            if (tick.player == null) return;
+
+            UUID playerUUID = tick.player.getUuid();
+            PacketByteBuf buffer = new PacketByteBuf(Unpooled.buffer());
+            boolean isChoosingOrigin = tick.currentScreen instanceof ChooseOriginScreen;
+
+            if (!Origins.PLAYERS_CHOOSING_ORIGIN.containsKey(playerUUID) || !Origins.PLAYERS_CHOOSING_ORIGIN.get(playerUUID).equals(isChoosingOrigin)) {
+
+                syncDelayTicks++;
+                if (syncDelayTicks < 5) return;
+
+                Origins.PLAYERS_CHOOSING_ORIGIN.put(playerUUID, isChoosingOrigin);
+
+                buffer.writeUuid(playerUUID);
+                buffer.writeBoolean(isChoosingOrigin);
+
+                ClientPlayNetworking.send(ModPackets.CHOOSING_ORIGIN, buffer);
+
+            }
+
+            else syncDelayTicks = 0;
+
         });
 
         PowerClearCallback.EVENT.register(PowerKeyManager::clearCache);
