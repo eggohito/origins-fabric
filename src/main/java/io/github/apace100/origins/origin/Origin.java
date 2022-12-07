@@ -36,6 +36,7 @@ public class Origin {
         .add("icon", CompatibilityDataTypes.ITEM_OR_ITEM_STACK, new ItemStack(Items.AIR))
         .add("unchoosable", SerializableDataTypes.BOOLEAN, false)
         .add("order", SerializableDataTypes.INT, Integer.MAX_VALUE)
+        .add("weight", SerializableDataTypes.INT, 1)
         .add("impact", OriginsDataTypes.IMPACT, Impact.NONE)
         .add("loading_priority", SerializableDataTypes.INT, 0)
         .add("upgrades", OriginsDataTypes.UPGRADES, null)
@@ -73,6 +74,7 @@ public class Origin {
     private final Impact impact;
     private boolean isChoosable;
     private final int order;
+    private final int weight;
     private final int loadingPriority;
     private List<OriginUpgrade> upgrades = new LinkedList<>();
 
@@ -87,6 +89,17 @@ public class Origin {
         this.impact = impact;
         this.isChoosable = true;
         this.order = order;
+        this.weight = 1;
+        this.loadingPriority = loadingPriority;
+    }
+
+    public Origin(Identifier id, ItemStack icon, Impact impact, int order, int weight, int loadingPriority) {
+        this.identifier = id;
+        this.displayItem = icon.copy();
+        this.impact = impact;
+        this.isChoosable = true;
+        this.order = order;
+        this.weight = weight;
         this.loadingPriority = loadingPriority;
     }
 
@@ -210,11 +223,16 @@ public class Origin {
         return this.order;
     }
 
+    public int getWeight() {
+        return this.weight;
+    }
+
     public void write(PacketByteBuf buffer) {
         SerializableData.Instance data = DATA.new Instance();
         data.set("icon", displayItem);
         data.set("impact", impact);
         data.set("order", order);
+        data.set("weight", weight);
         data.set("loading_priority", loadingPriority);
         data.set("unchoosable", !this.isChoosable);
         data.set("powers", powerTypes.stream().map(PowerType::getIdentifier).collect(Collectors.toList()));
@@ -226,15 +244,17 @@ public class Origin {
 
     @SuppressWarnings("unchecked")
     public static Origin createFromData(Identifier id, SerializableData.Instance data) {
-        Origin origin = new Origin(id,
-            (ItemStack)data.get("icon"),
-            (Impact)data.get("impact"),
+        Origin origin = new Origin(
+            id,
+            data.get("icon"),
+            data.get("impact"),
             data.getInt("order"),
-            data.getInt("loading_priority"));
+            data.getInt("weight"),
+            data.getInt("loading_priority")
+        );
 
-        if(data.getBoolean("unchoosable")) {
-            origin.setUnchoosable();
-        }
+        if(data.getBoolean("unchoosable")) origin.setUnchoosable();
+
 
         ((List<Identifier>)data.get("powers")).forEach(powerId -> {
             try {

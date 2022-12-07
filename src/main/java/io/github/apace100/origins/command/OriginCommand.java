@@ -3,6 +3,7 @@ package io.github.apace100.origins.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import io.github.apace100.calio.FilterableWeightedList;
 import io.github.apace100.origins.Origins;
 import io.github.apace100.origins.component.OriginComponent;
 import io.github.apace100.origins.networking.ModPackets;
@@ -257,9 +258,9 @@ public class OriginCommand {
 	}
 
 	/**
-	 * 	Randomize the origins of the specified entities in all of the origin layers that allows to be randomized.
+	 * 	Randomize the origins of the specified entities in all the origin layers that allows to be randomized.
 	 * 	@param commandContext the command context
-	 * 	@return the number of players that had their origins randomized in all of the origin layers that allows to be randomized
+	 * 	@return the number of players that had their origins randomized in all the origin layers that allows to be randomized
 	 * 	@throws CommandSyntaxException if the entity is not found or if the entity is not an instance of {@link ServerPlayerEntity}
 	 */
 	private static int randomizeOrigins(CommandContext<ServerCommandSource> commandContext, TargetType targetType) throws CommandSyntaxException {
@@ -301,9 +302,13 @@ public class OriginCommand {
 
 	private static Origin getRandomOrigin(ServerPlayerEntity target, OriginLayer originLayer) {
 
-		List<Origin> origins = originLayer.getRandomOrigins(target).stream().map(OriginRegistry::get).toList();
+		FilterableWeightedList<Origin> weightedRandomOrigins = new FilterableWeightedList<>();
+		originLayer.getRandomOrigins(target).stream().map(OriginRegistry::get).forEach(
+			origin -> weightedRandomOrigins.add(origin, origin.getWeight())
+		);
+
 		OriginComponent originComponent = ModComponents.ORIGIN.get(target);
-		Origin origin = origins.get(new Random().nextInt(origins.size()));
+		Origin origin = weightedRandomOrigins.pickRandom(new Random());
 
 		boolean hadOriginBefore = originComponent.hadOriginBefore();
 		boolean hadAllOrigins = originComponent.hasAllOrigins();
@@ -315,7 +320,7 @@ public class OriginCommand {
 		if (originComponent.hasAllOrigins() && !hadAllOrigins) OriginComponent.onChosen(target, hadOriginBefore);
 
 		Origins.LOGGER.info(
-			"Player {} was randomly assigned the origin {} for layer {}",
+			"Player {} was randomly assigned the following Origin: {} for layer: {}",
 			target.getDisplayName().getString(),
 			origin.getIdentifier().toString(),
 			originLayer.getIdentifier().toString()

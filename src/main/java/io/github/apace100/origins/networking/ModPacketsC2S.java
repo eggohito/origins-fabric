@@ -1,5 +1,6 @@
 package io.github.apace100.origins.networking;
 
+import io.github.apace100.calio.FilterableWeightedList;
 import io.github.apace100.origins.Origins;
 import io.github.apace100.origins.component.OriginComponent;
 import io.github.apace100.origins.origin.Origin;
@@ -71,10 +72,12 @@ public class ModPacketsC2S {
             OriginComponent component = ModComponents.ORIGIN.get(playerEntity);
             OriginLayer layer = OriginLayers.getLayer(Identifier.tryParse(layerId));
             if(!component.hasAllOrigins() && !component.hasOrigin(layer)) {
-                List<Identifier> randomOrigins = layer.getRandomOrigins(playerEntity);
-                if(layer.isRandomAllowed() && randomOrigins.size() > 0) {
-                    Identifier randomOrigin = randomOrigins.get(new Random().nextInt(randomOrigins.size()));
-                    Origin origin = OriginRegistry.get(randomOrigin);
+                FilterableWeightedList<Origin> weightedRandomOrigins = new FilterableWeightedList<>();
+                layer.getRandomOrigins(playerEntity).stream().map(OriginRegistry::get).forEach(
+                    origin -> weightedRandomOrigins.add(origin, origin.getWeight())
+                );
+                if(layer.isRandomAllowed() && weightedRandomOrigins.size() > 0) {
+                    Origin origin = weightedRandomOrigins.pickRandom(new Random());
                     boolean hadOriginBefore = component.hadOriginBefore();
                     boolean hadAllOrigins = component.hasAllOrigins();
                     component.setOrigin(layer, origin);
@@ -83,7 +86,7 @@ public class ModPacketsC2S {
                     if(component.hasAllOrigins() && !hadAllOrigins) {
                         OriginComponent.onChosen(playerEntity, hadOriginBefore);
                     }
-                    Origins.LOGGER.info("Player " + playerEntity.getDisplayName().getContent() + " was randomly assigned the following Origin: " + randomOrigin + ", for layer: " + layerId);
+                    Origins.LOGGER.info("Player " + playerEntity.getDisplayName().getContent() + " was randomly assigned the following Origin: " + origin.getIdentifier() + ", for layer: " + layerId);
                 } else {
                     Origins.LOGGER.info("Player " + playerEntity.getDisplayName().getContent() + " tried to choose a random Origin for layer " + layerId + ", which is not allowed!");
                     component.setOrigin(layer, Origin.EMPTY);
