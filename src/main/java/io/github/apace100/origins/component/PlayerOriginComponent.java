@@ -77,7 +77,7 @@ public class PlayerOriginComponent implements OriginComponent {
             this.hadOriginBefore = true;
         }
         if(player instanceof ServerPlayerEntity spe) {
-            ChoseOriginCriterion.INSTANCE.trigger(spe, origin);
+            ChoseOriginCriterion.INSTANCE.trigger(spe, origin, layer);
         }
     }
 
