@@ -42,9 +42,13 @@ public class OrbOfOriginItem extends Item {
     public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
 
         ItemStack stack = user.getStackInHand(hand);
-        if (!world.isClient) setOrigin((ServerPlayerEntity) user, stack);
+        if (!world.isClient) {
+            setOrigin((ServerPlayerEntity) user, stack);
+        }
 
-        if (!user.isCreative()) stack.decrement(1);
+        if (!user.isCreative()) {
+            stack.decrement(1);
+        }
         return TypedActionResult.consume(stack);
 
     }
@@ -69,14 +73,19 @@ public class OrbOfOriginItem extends Item {
         OriginComponent component = ModComponents.ORIGIN.get(serverPlayerEntity);
         Map<OriginLayer, Origin> targets = getTargets(stack);
 
-        if (!targets.isEmpty()) targets.entrySet()
-            .stream()
-            .filter(target -> target.getKey().isEnabled())
-            .forEach(target -> component.setOrigin(target.getKey(), target.getValue()));
-        else OriginLayers.getLayers()
-            .stream()
-            .filter(OriginLayer::isEnabled)
-            .forEach(layer -> component.setOrigin(layer, Origin.EMPTY));
+        if (!targets.isEmpty()) {
+            for (Map.Entry<OriginLayer, Origin> target : targets) {
+                if (target.getKey().isEnabled()) {
+                    component.setOrigin(target.getKey(), target.getValue());
+                }
+            }
+        } else {
+            for (OriginLayer layer : OriginLayers.getLayers()) {
+                if (layer.isEnabled()) {
+                    component.setOrigin(layer, Origin.EMPTY);
+                }
+            }
+        }
 
         component.checkAutoChoosingLayers(serverPlayerEntity, false);
         component.sync();
@@ -100,8 +109,9 @@ public class OrbOfOriginItem extends Item {
 
         for (NbtElement target : targetsList) {
 
-            if (!(target instanceof NbtCompound targetNbt)) continue;
-            if (!targetNbt.contains("Layer", NbtElement.STRING_TYPE)) continue;
+            if (!(target instanceof NbtCompound targetNbt || targetNbt.contains("Layer", NbtElement.STRING_TYPE))) {
+                continue;
+            }
 
             try {
 
@@ -114,8 +124,9 @@ public class OrbOfOriginItem extends Item {
                     origin = OriginRegistry.get(originId);
                 }
 
-                if (!(layer.isEnabled() && (layer.contains(origin) || origin.isSpecial()))) continue;
-                targets.put(layer, origin);
+                if (layer.isEnabled && (layer.contains(origin) || origin.isSpecial())) {
+                    targets.put(layer, origin);
+                }
 
             } catch (Exception ignored) {
                 // no-op
